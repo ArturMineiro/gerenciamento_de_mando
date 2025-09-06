@@ -22,7 +22,15 @@ export default function RootLayout() {
           <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="(auth)/login" options={{ title: 'Entrar' }} />
           <Stack.Screen name="(auth)/register" options={{ title: 'Criar conta' }} />
-          <Stack.Screen name="home" options={{ title: 'Home' }} />
+          <Stack.Screen
+            name="(auth)/home"
+            options={{
+              title: '🏟️ Meu Gerenciador',
+              headerShown: true, // mostra/oculta
+              headerStyle: { backgroundColor: '#d0dfdbff' }, // cor
+              headerTintColor: '#000000ff', // texto/ícones
+            }}
+          />
         </Stack>
       </QueryClientProvider>
     </SafeAreaProvider>
