@@ -14,14 +14,14 @@ return new class extends Migration
 Schema::create('reservas', function (Blueprint $table) {
     $table->id();
     $table->foreignId('usuario_id')->constrained('usuarios')->onDelete('cascade'); // dono da reserva
-    $table->foreignId('id_campo')->constrained('campos')->onDelete('cascade');
-    $table->foreignId('id_horario')->constrained('horarios')->onDelete('cascade');
-    $table->foreignId('id_cliente')->constrained('clientes')->onDelete('cascade');
+    $table->foreignId('campo_id')->constrained('campos')->onDelete('cascade');
+    $table->foreignId('horario_id')->constrained('horarios')->onDelete('cascade');
+    $table->foreignId('cliente_id')->constrained('clientes')->onDelete('cascade');
     $table->date('data');
     $table->enum('status', ['reservado','cancelado','concluido'])->default('reservado');
     $table->timestamps();
 
-    $table->unique(['id_campo', 'id_horario', 'data']); // garante não sobrepor
+    $table->unique(['campo_id', 'horario_id', 'data']); // garante não sobrepor
 });
 
 
