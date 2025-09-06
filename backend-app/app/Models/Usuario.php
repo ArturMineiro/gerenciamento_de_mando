@@ -25,4 +25,8 @@ class Usuario extends Authenticatable
     public function campos(){ return $this->hasMany(Campo::class); }
     public function clientes(){ return $this->hasMany(Cliente::class); }
     public function reservas(){ return $this->hasMany(Reserva::class); }
+    public function horarios()
+    {
+        return $this->hasMany(Horario::class, 'usuario_id');
+    }
 }
