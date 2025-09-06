@@ -40,6 +40,14 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+            'sanctum' => [
+        'driver' => 'sanctum',
+        'provider' => 'users',
+    ],
+    'api' => [ // opcional, se você usa 'auth:sanctum' já basta
+        'driver' => 'sanctum',
+        'provider' => 'users',
+    ]
     ],
 
     /*
@@ -62,7 +70,7 @@ return [
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', App\Models\User::class),
+            'model' => env('AUTH_MODEL', App\Models\Usuario::class),
         ],
 
         // 'users' => [
