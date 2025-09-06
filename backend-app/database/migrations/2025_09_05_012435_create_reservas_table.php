@@ -11,18 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-  Schema::create('reservas', function (Blueprint $table) {
+Schema::create('reservas', function (Blueprint $table) {
     $table->id();
-    $table->foreignId('id_campo')->constrained('campos');
-    $table->foreignId('id_horario')->constrained('horarios');
-    $table->foreignId('id_cliente')->constrained('clientes');
-    $table->foreignId('id_usuario')->constrained('usuarios'); // quem cadastrou
+    $table->foreignId('usuario_id')->constrained('usuarios')->onDelete('cascade'); // dono da reserva
+    $table->foreignId('id_campo')->constrained('campos')->onDelete('cascade');
+    $table->foreignId('id_horario')->constrained('horarios')->onDelete('cascade');
+    $table->foreignId('id_cliente')->constrained('clientes')->onDelete('cascade');
     $table->date('data');
     $table->enum('status', ['reservado','cancelado','concluido'])->default('reservado');
     $table->timestamps();
 
-    $table->unique(['id_campo', 'id_horario', 'data']); // impede conflito
+    $table->unique(['id_campo', 'id_horario', 'data']); // garante não sobrepor
 });
+
 
     }
 

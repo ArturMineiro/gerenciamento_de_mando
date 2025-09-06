@@ -11,12 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-    Schema::create('horarios', function (Blueprint $table) {
+Schema::create('horarios', function (Blueprint $table) {
     $table->id();
     $table->time('hora_inicio');
     $table->time('hora_fim');
     $table->timestamps();
 });
+
 
     }
 

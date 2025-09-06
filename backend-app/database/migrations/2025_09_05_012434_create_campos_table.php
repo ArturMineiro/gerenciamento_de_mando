@@ -11,12 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-     Schema::create('campos', function (Blueprint $table) {
+  Schema::create('campos', function (Blueprint $table) {
     $table->id();
+    $table->foreignId('usuario_id')->constrained('usuarios')->onDelete('cascade');
     $table->string('nome');
-    $table->string('localizacao')->nullable();
+    $table->string('localizacao')->nullable(); // pode ser endereço ou nome do lugar
     $table->timestamps();
 });
+
 
     }
 

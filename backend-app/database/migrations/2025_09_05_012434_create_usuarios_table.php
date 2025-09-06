@@ -11,14 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-   Schema::create('usuarios', function (Blueprint $table) {
+Schema::create('usuarios', function (Blueprint $table) {
     $table->id();
     $table->string('nome');
     $table->string('email')->unique();
-    $table->string('senha_hash'); // armazena bcrypt
+    $table->string('senha_hash');
     $table->enum('role', ['admin','gerenciador'])->default('gerenciador');
     $table->timestamps();
 });
+
 
     }
 

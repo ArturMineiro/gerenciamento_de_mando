@@ -13,6 +13,7 @@ return new class extends Migration
     {
 Schema::create('clientes', function (Blueprint $table) {
     $table->id();
+    $table->foreignId('usuario_id')->constrained('usuarios')->onDelete('cascade');
     $table->string('cpf_cnpj')->unique();
     $table->string('nome');
     $table->string('telefone')->nullable();
