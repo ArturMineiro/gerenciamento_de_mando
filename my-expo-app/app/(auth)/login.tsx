@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { View, Text, KeyboardAvoidingView, Platform } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Input from '.././components/ui/Input';
-import Button from '.././components/ui/Button';
-import { useLogin, extractMessage } from '.././hooks/useAuth';
+import Input from '../../components/ui/Input';
+import Button from '../../components/ui/Button';
+import { useLogin, extractMessage } from '../../hooks/useAuth';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -13,7 +13,7 @@ export default function LoginScreen() {
   const [erro, setErro] = useState('');
 
   const { mutate: doLogin, isPending } = useLogin({
-    onSuccess: () => router.replace('/home'),
+    onSuccess: () => router.replace('/(auth)/home'), // ✅ grupo correto
   });
 
   function handleLogin() {

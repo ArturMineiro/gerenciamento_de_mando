@@ -1,14 +1,32 @@
+// app/(auth)/home.tsx
 import { View, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Link } from 'expo-router';
+import { Link, useRouter, Stack } from 'expo-router';
+import { useLogout } from '../../hooks/useAuth';
 import FootballPitchBackground from '../../components/Campo';
-// Um “campo de futebol” feito só com Views e Tailwind classes.
-// Sem imagens externas — leve e funciona em web/mobile.
 
 export default function HomeScreen() {
+  const router = useRouter();
+  const { mutate: doLogout, isPending } = useLogout({
+    onSuccess: () => router.replace('/(auth)/login'),
+  });
+
   return (
     <SafeAreaView className="flex-1 bg-emerald-700">
-      {/* chamando campinho de components abaixo */}
+      {/* header desta tela */}
+      <Stack.Screen
+        options={{
+          title: '🏟️ Meu Gerenciador',
+          headerRight: () => (
+            <Text
+              onPress={() => !isPending && doLogout()}
+              className="mr-3 font-semibold text-red-300">
+              {isPending ? 'Saindo...' : 'Sair'}
+            </Text>
+          ),
+        }}
+      />
+
       <FootballPitchBackground />
 
       <View className="flex-1 items-center justify-center px-6">
@@ -23,13 +41,13 @@ export default function HomeScreen() {
 
         <View className="mt-8 w-full max-w-sm gap-3">
           <Link
-            href="/reservas"
+            href="/(auth)/reservas" // ✅ grupo correto
             className="rounded-2xl bg-white/95 py-3 text-center active:opacity-90">
             <Text className="font-bold text-emerald-700">Ir para Reservas</Text>
           </Link>
 
           <Link
-            href="/campos"
+            href="/(auth)/campos" // ✅ grupo correto
             className="rounded-2xl bg-white/90 py-3 text-center active:opacity-90">
             <Text className="font-bold text-emerald-700">Gerenciar Campos</Text>
           </Link>

@@ -1,8 +1,9 @@
+// hooks/useAuth.ts (o arquivo onde estão useLogin/useLogout/useMe)
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { loginApi, registerApi, logoutApi, meApi, LoginInput, RegisterInput } from 'services/auth';
+import { useAuth } from '../providers/AuthProvider'; // ✅
 
-function extractMessage(err: unknown): string {
-  // axios error → tenta achar mensagem do backend (Laravel 422/401)
+export function extractMessage(err: unknown): string {
   const anyErr = err as any;
   const msg =
     anyErr?.response?.data?.message ||
@@ -14,10 +15,13 @@ function extractMessage(err: unknown): string {
 
 export function useLogin(opts?: { onSuccess?: () => void }) {
   const qc = useQueryClient();
+  const { signIn } = useAuth(); // ✅
   return useMutation({
     mutationFn: (data: LoginInput) => loginApi(data),
-    onSuccess: async () => {
-      // atualiza dados do usuário
+    onSuccess: async (res: any) => {
+      // pegue o nome correto do campo de token retornado pela sua API
+      const token = res?.token ?? res?.access_token ?? res?.data?.token;
+      if (token) await signIn(token); // ✅ salva no AuthProvider/AsyncStorage
       await qc.invalidateQueries({ queryKey: ['me'] });
       opts?.onSuccess?.();
     },
@@ -41,10 +45,13 @@ export function useRegister(opts?: { onSuccess?: () => void }) {
 
 export function useLogout(opts?: { onSuccess?: () => void }) {
   const qc = useQueryClient();
+  const { signOut } = useAuth(); // ✅
   return useMutation({
     mutationFn: () => logoutApi(),
-    onSuccess: async () => {
-      await qc.clear(); // limpa cache
+    // Se sua API não tiver endpoint de logout, pode usar mutationFn: async () => {}
+    onSettled: async () => {
+      await signOut(); // ✅ limpa token
+      await qc.clear(); // limpa cache (opcional)
       opts?.onSuccess?.();
     },
   });
@@ -57,5 +64,3 @@ export function useMe() {
     staleTime: 5 * 60 * 1000,
   });
 }
-
-export { extractMessage };
