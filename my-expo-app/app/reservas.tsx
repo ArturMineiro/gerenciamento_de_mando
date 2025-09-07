@@ -49,9 +49,7 @@ export default function ReservasCalendarScreen() {
   const dateStr = fmt(selectedDate);
 
   // ---------------- dados remotos ----------------
-  // (opcional) se quiser pré-carregar pra selecionar o primeiro automaticamente dentro do CampoPicker
   const { data: camposData } = useCampos({ page: 1, per_page: 50 });
-
   const { data: horariosData, isLoading: loadingHorarios } = useHorarios({ per_page: 200 });
 
   const {
@@ -65,24 +63,27 @@ export default function ReservasCalendarScreen() {
     page: 1,
   });
 
-  // selecionar primeiro campo assim que houver (se nenhum selecionado ainda)
+  // selecionar primeiro campo quando carregar
   useEffect(() => {
-    if (!campoId && camposData?.data?.length) {
-      setCampoId(camposData.data[0].id);
-    }
+    if (!campoId && camposData?.data?.length) setCampoId(camposData.data[0].id);
   }, [campoId, camposData]);
 
   // ---------------- slots e disponibilidade ----------------
   const baseSlots = useMemo(() => buildTwoHourSlots(), []);
 
+  // (inicio,fim) -> horario_id
   const horarioMap = useMemo(() => {
     const map = new Map<string, number>();
+    const toHM = (s: string) => (s?.length >= 5 ? s.slice(0, 5) : s); // "11:00:00" -> "11:00"
     horariosData?.data.forEach((h) => {
-      map.set(`${h.hora_inicio}-${h.hora_fim}`, h.id);
+      const ini = toHM(h.hora_inicio);
+      const fim = toHM(h.hora_fim);
+      map.set(`${ini}-${fim}`, h.id);
     });
     return map;
   }, [horariosData]);
 
+  // slots com horario_id preenchido (se existir correspondente no banco)
   const slots = useMemo<Slot[]>(() => {
     return baseSlots.map((s) => ({
       ...s,
@@ -90,11 +91,26 @@ export default function ReservasCalendarScreen() {
     }));
   }, [baseSlots, horarioMap]);
 
+  // ocupado se houver reserva nesse horario_id com status != 'cancelado'
   const busyByHorarioId = useMemo(() => {
     const set = new Set<number>();
-    reservasDia?.data.forEach((r) => r.horario_id && set.add(r.horario_id));
+    reservasDia?.data.forEach((r) => {
+      if (r.horario_id && r.status !== 'cancelado') {
+        set.add(r.horario_id);
+      }
+    });
     return set;
   }, [reservasDia]);
+
+  // (opcional) slots passados no mesmo dia ficam indisponíveis
+  const now = dayjs();
+  const isToday = dayjs(selectedDate).isSame(now, 'day');
+
+  function isPastSlot(slot: Slot) {
+    if (!isToday) return false;
+    const slotEnd = dayjs(`${fmt(selectedDate)} ${slot.fim}:00`);
+    return now.isAfter(slotEnd);
+  }
 
   // ---------------- criar reserva (cliente rápido) ----------------
   const [showModal, setShowModal] = useState(false);
@@ -119,6 +135,7 @@ export default function ReservasCalendarScreen() {
     setClienteTelefone('');
   }
 
+  // navegação de dias (pula domingo)
   function goPrevDay() {
     let prev = dayjs(selectedDate).subtract(1, 'day');
     if (isSunday(prev)) prev = prev.subtract(1, 'day');
@@ -134,12 +151,13 @@ export default function ReservasCalendarScreen() {
     if (!campoId) return alert('Selecione um campo.');
     if (isSunday(dayjs(selectedDate))) return alert('Domingo indisponível.');
     if (!pendingSlot?.horario_id) return alert('Não há horário cadastrado para esse intervalo.');
+    if (isPastSlot(pendingSlot)) return alert('Horário já passou.');
     if (!clienteNome.trim()) return alert('Informe o nome do cliente.');
 
-    // 1) cria cliente rápido
+    // 1) cria cliente
     createCliente.mutate(
       {
-        cpf_cnpj: `TEMP-${Date.now()}`, // ajuste conforme sua regra backend
+        cpf_cnpj: `TEMP-${Date.now()}`, // ajuste se quiser
         nome: clienteNome.trim(),
         telefone: clienteTelefone.trim() || null,
         email: null,
@@ -171,13 +189,11 @@ export default function ReservasCalendarScreen() {
       {/* Header */}
       <Text className="mb-3 text-2xl font-extrabold text-white">Reservas</Text>
 
-      {/* Picker de Campo (reutilizável) */}
+      {/* Campo */}
       <CampoPicker value={campoId} onSelect={setCampoId} />
-
-      {/* Detalhe opcional do campo selecionado */}
       {campoSel && <Text className="mt-2 text-zinc-400">Selecionado: {campoSel.nome}</Text>}
 
-      {/* Seleção de data */}
+      {/* Data */}
       <View className="mb-3 mt-3 flex-row items-center justify-between">
         <Pressable onPress={goPrevDay} className="rounded-lg bg-zinc-800 px-3 py-2">
           <Text className="text-white">{'← Dia anterior'}</Text>
@@ -205,7 +221,23 @@ export default function ReservasCalendarScreen() {
         </View>
       )}
 
-      {/* Grade de horários */}
+      {/* Legenda */}
+      <View className="mb-2 flex-row flex-wrap gap-2">
+        <View className="flex-row items-center gap-2">
+          <View className="h-3 w-3 rounded-full bg-emerald-500" />
+          <Text className="text-xs text-zinc-400">Disponível</Text>
+        </View>
+        <View className="flex-row items-center gap-2">
+          <View className="h-3 w-3 rounded-full bg-red-500" />
+          <Text className="text-xs text-zinc-400">Reservado/Concluído</Text>
+        </View>
+        <View className="flex-row items-center gap-2">
+          <View className="h-3 w-3 rounded-full bg-zinc-700" />
+          <Text className="text-xs text-zinc-400">Sem horário cadastrado / Passado</Text>
+        </View>
+      </View>
+
+      {/* Grade */}
       <View className="flex-1">
         {loadingAny ? (
           <View className="flex-1 items-center justify-center">
@@ -216,35 +248,39 @@ export default function ReservasCalendarScreen() {
           </View>
         ) : (
           <FlatList
-            data={buildTwoHourSlots().map((s) => ({
-              ...s,
-              horario_id: horarioMap.get(`${s.inicio}-${s.fim}`),
-            }))} // mesmo resultado de "slots" (pode usar "slots" direto)
+            data={slots} // já vem com horario_id (ou undefined)
             keyExtractor={(s) => s.label}
             contentContainerStyle={{ paddingBottom: 24 }}
             renderItem={({ item }) => {
-              const busy = item.horario_id ? busyByHorarioId.has(item.horario_id) : false;
-              const disabled = domingo || !campoId || !item.horario_id;
+              const isBusy = item.horario_id ? busyByHorarioId.has(item.horario_id) : false;
+              const past = isPastSlot(item);
+              const disabled = domingo || !campoId || !item.horario_id || past;
+
+              const containerCls = isBusy
+                ? 'border border-red-500 bg-red-500/20'
+                : disabled
+                  ? 'border border-zinc-700 bg-zinc-800/50'
+                  : 'border border-emerald-500 bg-emerald-500/20';
+
+              const statusText = isBusy ? 'Indisponível' : disabled ? 'Indisponível' : 'Disponível';
+
+              const statusCls = isBusy
+                ? 'text-red-300'
+                : disabled
+                  ? 'text-zinc-400'
+                  : 'text-emerald-300';
 
               return (
                 <Pressable
-                  disabled={disabled || busy}
+                  disabled={disabled || isBusy}
                   onPress={() => openReserveModal(item)}
                   className={[
                     'mb-2 flex-row items-center justify-between rounded-xl px-4 py-4',
-                    busy
-                      ? 'border border-red-500 bg-red-500/20'
-                      : disabled
-                        ? 'border border-zinc-700 bg-zinc-800/50'
-                        : 'border border-emerald-500 bg-emerald-500/20',
+                    containerCls,
                   ].join(' ')}>
                   <Text className="text-base text-white">{item.label}</Text>
-                  <Text
-                    className={[
-                      'text-sm font-semibold',
-                      busy ? 'text-red-300' : disabled ? 'text-zinc-400' : 'text-emerald-300',
-                    ].join(' ')}>
-                    {busy ? 'Reservado' : disabled ? 'Indisponível' : 'Disponível'}
+                  <Text className={['text-sm font-semibold', statusCls].join(' ')}>
+                    {statusText}
                   </Text>
                 </Pressable>
               );
@@ -252,6 +288,51 @@ export default function ReservasCalendarScreen() {
           />
         )}
       </View>
+
+      {/* Modal reservar */}
+      <Modal visible={!!showModal} animationType="slide" transparent onRequestClose={closeModal}>
+        <View className="flex-1 items-center justify-end bg-black/40">
+          <View className="w-full rounded-t-2xl bg-zinc-900 p-4">
+            <Text className="mb-3 text-xl font-bold text-white">Confirmar reserva</Text>
+            <Text className="mb-4 text-zinc-300">
+              {dayjs(selectedDate).format('DD/MM/YYYY')} • {pendingSlot?.label ?? ''}
+            </Text>
+
+            <Text className="mb-1 text-zinc-400">Nome do cliente</Text>
+            <TextInput
+              value={clienteNome}
+              onChangeText={setClienteNome}
+              placeholder="Ex.: João Silva"
+              placeholderTextColor="#a1a1aa"
+              className="mb-3 rounded-xl bg-zinc-800 px-3 py-3 text-white"
+            />
+
+            <Text className="mb-1 text-zinc-400">Telefone (opcional)</Text>
+            <TextInput
+              value={clienteTelefone}
+              onChangeText={setClienteTelefone}
+              placeholder="(21) 90000-0000"
+              placeholderTextColor="#a1a1aa"
+              keyboardType="phone-pad"
+              className="mb-4 rounded-xl bg-zinc-800 px-3 py-3 text-white"
+            />
+
+            <View className="flex-row justify-end gap-2">
+              <Pressable onPress={closeModal} className="rounded-xl bg-zinc-700 px-4 py-3">
+                <Text className="text-white">Cancelar</Text>
+              </Pressable>
+              <Pressable
+                disabled={createCliente.isPending || createReserva.isPending}
+                onPress={confirmReserva}
+                className="rounded-xl bg-emerald-600 px-4 py-3">
+                <Text className="font-semibold text-white">
+                  {createCliente.isPending || createReserva.isPending ? 'Salvando...' : 'Reservar'}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
