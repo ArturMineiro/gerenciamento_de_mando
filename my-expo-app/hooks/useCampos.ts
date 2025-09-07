@@ -91,37 +91,10 @@ export function useDeleteCampo(opts?: {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => deleteCampo(id),
-    onMutate: async (id) => {
-      // pausa requisições relacionadas
-      await qc.cancelQueries({ queryKey: keys.all });
-
-      // snapshot das listas
-      const listQueries = qc.getQueriesData<Paginated<Campo>>({
-        queryKey: [...keys.all, 'list'],
-      });
-
-      const prevSnapshots = listQueries.map(([key, data]) => ({ key, data }));
-
-      // remove otimisticamente
-      for (const [key, data] of listQueries) {
-        if (!data) continue;
-        qc.setQueryData(key, {
-          ...data,
-          data: data.data.filter((c) => c.id !== id),
-          total: Math.max(0, (data.total ?? 0) - 1),
-        });
-      }
-
-      return { prevSnapshots };
-    },
-    onError: (e, _id, ctx) => {
-      // rollback
-      ctx?.prevSnapshots?.forEach(({ key, data }) => qc.setQueryData(key, data));
-      opts?.onError?.(extractMessage(e));
-    },
     onSuccess: async (deletedId) => {
       await qc.invalidateQueries({ queryKey: keys.all });
       opts?.onSuccess?.(deletedId);
     },
+    onError: (e: unknown) => opts?.onError?.(extractMessage(e)),
   });
 }
