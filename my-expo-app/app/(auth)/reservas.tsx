@@ -15,8 +15,8 @@ import SlotList from '../../components/reservas/SlotList';
 import ReservaModal from '../../components/reservas/ReservaModal';
 import ReservaDetalhesModal from '../../components/reservas/ReservaDetalhesModal';
 
-import { useReservaCalendar } from '../../hooks/useReservaCalendar';
-import { useQuickReserva } from '../../hooks/useQuickReserva';
+import { useReservaCalendar } from '../../hooks/reservas/useReservaCalendar';
+import { useQuickReserva } from '../../hooks/reservas/useQuickReserva';
 
 export default function ReservasCalendarScreen() {
   const {

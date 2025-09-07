@@ -3,11 +3,10 @@ import { useEffect, useMemo, useState, useCallback } from 'react';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 dayjs.extend(customParseFormat);
-
-import { useCampo, useCampos } from './useCampos';
-import { useHorarios } from './useHorarios';
-import { useReservas } from './useReservas';
-import { buildSlots, fmt, isSunday, Slot } from '../utils/datetime';
+import { useCampo, useCampos } from '../useCampos';
+import { useHorarios } from '../useHorarios';
+import { useReservas } from '../useReservas';
+import { buildSlots, fmt, isSunday, Slot } from '../../utils/datetime';
 
 export function useReservaCalendar() {
   const [campoId, setCampoId] = useState<number | undefined>();

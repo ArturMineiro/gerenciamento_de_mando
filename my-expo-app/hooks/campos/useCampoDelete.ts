@@ -31,7 +31,12 @@ export function useCampoDelete() {
   };
 
   return {
-    confirmOpen, targetDelete, deletingId, deleting,
-    askDelete, cancelDelete, confirmDeleteNow,
+    confirmOpen,
+    targetDelete,
+    deletingId,
+    deleting,
+    askDelete,
+    cancelDelete,
+    confirmDeleteNow,
   };
 }

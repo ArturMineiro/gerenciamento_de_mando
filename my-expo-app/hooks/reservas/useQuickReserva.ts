@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
-import { useCreateCliente } from './useClientes';
-import { useCreateReserva } from './useReservas';
-import { Slot } from '../utils/datetime';
+import { useCreateCliente } from '../useClientes';
+import { useCreateReserva } from '../useReservas';
+import { Slot } from '../../utils/datetime';
 
 type Params = {
   campoId?: number;
@@ -63,14 +63,31 @@ export function useQuickReserva({ campoId, dateStr, isPastSlot, domingo }: Param
         },
       }
     );
-  }, [campoId, domingo, pendingSlot, clienteNome, clienteTelefone, dateStr, isPastSlot, createCliente, createReserva, closeModal]);
+  }, [
+    campoId,
+    domingo,
+    pendingSlot,
+    clienteNome,
+    clienteTelefone,
+    dateStr,
+    isPastSlot,
+    createCliente,
+    createReserva,
+    closeModal,
+  ]);
 
   const saving = createCliente.isPending || createReserva.isPending;
 
   return {
-    showModal, pendingSlot,
-    clienteNome, setClienteNome,
-    clienteTelefone, setClienteTelefone,
-    openReserveModal, closeModal, confirmReserva, saving,
+    showModal,
+    pendingSlot,
+    clienteNome,
+    setClienteNome,
+    clienteTelefone,
+    setClienteTelefone,
+    openReserveModal,
+    closeModal,
+    confirmReserva,
+    saving,
   };
 }
