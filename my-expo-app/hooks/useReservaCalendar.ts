@@ -8,16 +8,21 @@ import { buildSlots, fmt, isSunday, Slot } from '../utils/datetime';
 export function useReservaCalendar() {
   const [campoId, setCampoId] = useState<number | undefined>();
   const { data: camposData } = useCampos({ page: 1, per_page: 50 });
-  const { data: campoSel }   = useCampo(campoId);
+  const { data: campoSel } = useCampo(campoId);
   const { data: horariosData, isLoading: loadingHorarios } = useHorarios({ per_page: 200 });
 
+  // Data inicial: se hoje for domingo, começa na segunda
   const [selectedDate, setSelectedDate] = useState(() => {
     const today = dayjs();
     return isSunday(today) ? today.add(1, 'day').toDate() : today.toDate();
   });
   const dateStr = fmt(selectedDate);
 
-  const { data: reservasDia, isLoading: loadingReservas, isFetching } = useReservas({
+  const {
+    data: reservasDia,
+    isLoading: loadingReservas,
+    isFetching,
+  } = useReservas({
     data: dateStr,
     campo_id: campoId,
     per_page: 200,
@@ -32,7 +37,7 @@ export function useReservaCalendar() {
   const horarioMap = useMemo(() => {
     const map = new Map<string, number>();
     const toHM = (s: string) => (s?.length >= 5 ? s.slice(0, 5) : s);
-    horariosData?.data.forEach((h: any) => {
+    horariosData?.data?.forEach((h: any) => {
       map.set(`${toHM(h.hora_inicio)}-${toHM(h.hora_fim)}`, h.id);
     });
     return map;
@@ -45,20 +50,23 @@ export function useReservaCalendar() {
 
   const busyByHorarioId = useMemo(() => {
     const set = new Set<number>();
-    reservasDia?.data.forEach((r: any) => {
+    reservasDia?.data?.forEach((r: any) => {
       if (r.horario_id && r.status !== 'cancelado') set.add(r.horario_id);
     });
     return set;
   }, [reservasDia]);
 
-  const now = dayjs();
-  const isToday = dayjs(selectedDate).isSame(now, 'day');
+  const isToday = dayjs(selectedDate).isSame(dayjs(), 'day');
 
-  const isPastSlot = useCallback((slot: Slot) => {
-    if (!isToday) return false;
-    const end = dayjs(`${fmt(selectedDate)} ${slot.fim}:00`);
-    return now.isAfter(end);
-  }, [isToday, now, selectedDate]);
+  const isPastSlot = useCallback(
+    (slot: Slot) => {
+      if (!isToday) return false;
+      const now = dayjs(); // calcula no momento da checagem
+      const end = dayjs(`${fmt(selectedDate)} ${slot.fim}:00`);
+      return now.isAfter(end);
+    },
+    [isToday, selectedDate]
+  );
 
   const domingo = isSunday(selectedDate);
   const loadingAny = loadingHorarios || loadingReservas;
@@ -76,11 +84,32 @@ export function useReservaCalendar() {
     setSelectedDate(next.toDate());
   }, [selectedDate]);
 
+  // 👉 NOVO: ir direto para uma data específica (evitando domingo por padrão)
+  const goToDate = useCallback((date: Date, opts?: { allowSunday?: boolean }) => {
+    let d = dayjs(date);
+    if (!opts?.allowSunday && isSunday(d)) {
+      // regra: se caiu num domingo, avança para segunda
+      d = d.add(1, 'day');
+    }
+    setSelectedDate(d.toDate());
+  }, []);
+
   return {
-    campoId, setCampoId, campoSel,
-    selectedDate, setSelectedDate, dateStr,
-    domingo, slots, busyByHorarioId, isPastSlot,
-    loadingAny, semHorarios, isFetching,
-    goPrevDay, goNextDay,
+    campoId,
+    setCampoId,
+    campoSel,
+    selectedDate,
+    setSelectedDate,
+    dateStr,
+    domingo,
+    slots,
+    busyByHorarioId,
+    isPastSlot,
+    loadingAny,
+    semHorarios,
+    isFetching,
+    goPrevDay,
+    goNextDay,
+    goToDate, // <-- exporta para a tela abrir o calendário e saltar de uma vez
   };
 }
