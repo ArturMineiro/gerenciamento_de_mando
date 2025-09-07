@@ -8,15 +8,15 @@ dayjs.locale('pt-br');
 
 import { Calendar } from 'react-native-calendars';
 
-import CampoPicker from '../components/CampoPicker';
-import DateNav from '../components/reservas/DateNav';
-import Legend from '../components/reservas/Legend';
-import SlotList from '../components/reservas/SlotList';
-import ReservaModal from '../components/reservas/ReservaModal';
-import ReservaDetalhesModal from '../components/reservas/ReservaDetalhesModal';
+import CampoPicker from '../../components/CampoPicker';
+import DateNav from '../../components/reservas/DateNav';
+import Legend from '../../components/reservas/Legend';
+import SlotList from '../../components/reservas/SlotList';
+import ReservaModal from '../../components/reservas/ReservaModal';
+import ReservaDetalhesModal from '../../components/reservas/ReservaDetalhesModal';
 
-import { useReservaCalendar } from '../hooks/useReservaCalendar';
-import { useQuickReserva } from '../hooks/useQuickReserva';
+import { useReservaCalendar } from '../../hooks/useReservaCalendar';
+import { useQuickReserva } from '../../hooks/useQuickReserva';
 
 export default function ReservasCalendarScreen() {
   const {

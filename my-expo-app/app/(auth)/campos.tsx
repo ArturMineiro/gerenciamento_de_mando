@@ -28,15 +28,21 @@ export default function CamposManagerScreen() {
   );
 
   // Lista + paginação + busca
-  const { q, setQ, page, setPage, lastPage, data, isLoading, isFetching, refetch } = useCampoList(10);
+  const { q, setQ, page, setPage, lastPage, data, isLoading, isFetching, refetch } =
+    useCampoList(10);
 
   // Form (criar/editar)
   const { modalOpen, editing, openCreate, openEdit, close, handleSubmit, saving } = useCampoForm();
 
   // Delete
   const {
-    confirmOpen, targetDelete, deletingId, deleting,
-    askDelete, cancelDelete, confirmDeleteNow,
+    confirmOpen,
+    targetDelete,
+    deletingId,
+    deleting,
+    askDelete,
+    cancelDelete,
+    confirmDeleteNow,
   } = useCampoDelete();
 
   return (
@@ -62,7 +68,9 @@ export default function CamposManagerScreen() {
         <FlatList
           data={data?.data ?? []}
           keyExtractor={(item: Campo) => String(item.id)}
-          refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} tintColor="#fff" />}
+          refreshControl={
+            <RefreshControl refreshing={isFetching} onRefresh={refetch} tintColor="#fff" />
+          }
           contentContainerStyle={{ paddingBottom: 24 }}
           ListEmptyComponent={
             <View className="mt-10 items-center">
@@ -70,7 +78,12 @@ export default function CamposManagerScreen() {
             </View>
           }
           renderItem={({ item }) => (
-            <CampoItem item={item} onEdit={openEdit} onAskDelete={askDelete} deletingId={deletingId} />
+            <CampoItem
+              item={item}
+              onEdit={openEdit}
+              onAskDelete={askDelete}
+              deletingId={deletingId}
+            />
           )}
         />
       )}
