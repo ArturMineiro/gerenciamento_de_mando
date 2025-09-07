@@ -1,4 +1,5 @@
-import { FlatList, View, ActivityIndicator, Text } from 'react-native';
+// SlotList.tsx
+import { FlatList, View, ActivityIndicator, Text, Pressable } from 'react-native';
 import { Slot } from '../../utils/datetime';
 import SlotItem from './SlotItem';
 
@@ -11,16 +12,25 @@ type Props = {
   loadingAny: boolean;
   isFetching: boolean;
   onPick(slot: Slot): void;
+  onOpenDetails?(horarioId?: number): void; // <-- novo
 };
 
 export default function SlotList({
-  slots, domingo, campoId, busyByHorarioId, isPastSlot, loadingAny, isFetching, onPick,
+  slots,
+  domingo,
+  campoId,
+  busyByHorarioId,
+  isPastSlot,
+  loadingAny,
+  isFetching,
+  onPick,
+  onOpenDetails,
 }: Props) {
   if (loadingAny) {
     return (
       <View className="flex-1 items-center justify-center">
         <ActivityIndicator />
-        <Text className="mt-2 text-zinc-400">
+        <Text className="text-zinc-4 00 mt-2">
           Carregando {isFetching ? '(atualizando...)' : '...'}
         </Text>
       </View>
@@ -37,10 +47,26 @@ export default function SlotList({
         const past = isPastSlot(item);
         const disabled = domingo || !campoId || !item.horario_id || past;
 
-        const status: 'available' | 'busy' | 'disabled' =
-          isBusy ? 'busy' : disabled ? 'disabled' : 'available';
+        const status: 'available' | 'busy' | 'disabled' = isBusy
+          ? 'busy'
+          : disabled
+            ? 'disabled'
+            : 'available';
 
-        return <SlotItem label={item.label} status={status} onPress={() => onPick(item)} />;
+        return (
+          <View className="mb-2">
+            {isBusy && (
+              <View className="mb-1 items-end">
+                <Pressable
+                  onPress={() => onOpenDetails?.(item.horario_id)}
+                  className="rounded-md bg-zinc-800 px-2 py-1">
+                  <Text className="text-xs font-medium text-violet-300">Ver detalhes</Text>
+                </Pressable>
+              </View>
+            )}
+            <SlotItem label={item.label} status={status} onPress={() => onPick(item)} />
+          </View>
+        );
       }}
     />
   );

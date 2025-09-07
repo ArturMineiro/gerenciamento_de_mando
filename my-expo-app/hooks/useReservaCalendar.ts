@@ -28,7 +28,15 @@ export function useReservaCalendar() {
     per_page: 200,
     page: 1,
   });
-
+  const reservaByHorarioId = useMemo(() => {
+    const map = new Map<number, any>();
+    reservasDia?.data?.forEach((r: any) => {
+      if (r?.horario_id && r?.status !== 'cancelado') {
+        map.set(r.horario_id, r);
+      }
+    });
+    return map;
+  }, [reservasDia]);
   useEffect(() => {
     if (!campoId && camposData?.data?.length) setCampoId(camposData.data[0].id);
   }, [campoId, camposData]);
@@ -110,6 +118,7 @@ export function useReservaCalendar() {
     isFetching,
     goPrevDay,
     goNextDay,
-    goToDate, // <-- exporta para a tela abrir o calendário e saltar de uma vez
+    goToDate,
+    reservaByHorarioId, // <-- exporta para a tela abrir o calendário e saltar de uma vez
   };
 }

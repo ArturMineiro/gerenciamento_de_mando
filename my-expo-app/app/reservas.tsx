@@ -1,8 +1,10 @@
+import React, { useState } from 'react';
 import { View, Text, Pressable, Modal } from 'react-native';
 import dayjs from 'dayjs';
+import { Stack } from 'expo-router';
+
 import 'dayjs/locale/pt-br';
 dayjs.locale('pt-br');
-import React, { useState } from 'react'; // ✅ adicione o useState aqui
 
 import { Calendar } from 'react-native-calendars';
 
@@ -11,6 +13,7 @@ import DateNav from '../components/reservas/DateNav';
 import Legend from '../components/reservas/Legend';
 import SlotList from '../components/reservas/SlotList';
 import ReservaModal from '../components/reservas/ReservaModal';
+import ReservaDetalhesModal from '../components/reservas/ReservaDetalhesModal';
 
 import { useReservaCalendar } from '../hooks/useReservaCalendar';
 import { useQuickReserva } from '../hooks/useQuickReserva';
@@ -31,7 +34,8 @@ export default function ReservasCalendarScreen() {
     isFetching,
     goPrevDay,
     goNextDay,
-    goToDate, // << garantir que veio do hook
+    goToDate,
+    reservaByHorarioId,
   } = useReservaCalendar();
 
   const {
@@ -47,34 +51,56 @@ export default function ReservasCalendarScreen() {
     saving,
   } = useQuickReserva({ campoId, selectedDate, dateStr, isPastSlot, domingo });
 
-  // estado do modal do calendário
-
+  // modais
   const [showCalendar, setShowCalendar] = useState(false);
+  const [detalheOpen, setDetalheOpen] = useState(false);
+  const [reservaSelecionada, setReservaSelecionada] = useState<any | null>(null);
 
-  // datas marcadas (marca o dia atual selecionado)
+  // marca a data atual no calendário
   const marked = {
     [dayjs(selectedDate).format('YYYY-MM-DD')]: {
       selected: true,
-      selectedColor: '#7c3aed', // roxinho (opcional)
+      selectedColor: '#7c3aed',
     },
   };
 
+  function openDetalhesByHorarioId(horarioId?: number) {
+    if (!horarioId) return;
+    const r = reservaByHorarioId.get(horarioId);
+    if (r) {
+      setReservaSelecionada(r);
+      setDetalheOpen(true);
+    }
+  }
+
   return (
     <View className="flex-1 bg-zinc-900 px-4 py-4">
+      {/* Header */}
+      <Stack.Screen
+        options={{
+          title: 'Agenda de Reservas',
+          headerShown: true,
+          headerStyle: { backgroundColor: '#09090b' },
+          headerTintColor: '#fff',
+        }}
+      />
       <Text className="mb-3 text-2xl font-extrabold text-white">Reservas</Text>
 
+      {/* Campo */}
       <CampoPicker value={campoId} onSelect={setCampoId} />
       {campoSel && <Text className="mt-2 text-zinc-400">Selecionado: {campoSel.nome}</Text>}
 
-      <View className="mb-2 mt-3 flex-row items-center justify-between">
+      {/* Navegação de datas + botão calendário */}
+      <View className="mb-2 mt-3 flex-row flex-wrap items-center justify-between gap-y-2">
         <DateNav date={selectedDate} onPrev={goPrevDay} onNext={goNextDay} />
         <Pressable
           onPress={() => setShowCalendar(true)}
-          className="ml-3 rounded-lg bg-violet-600 px-3 py-2">
+          className="rounded-lg bg-violet-600 px-3 py-2">
           <Text className="font-semibold text-white">Selecionar data</Text>
         </Pressable>
       </View>
 
+      {/* Avisos */}
       {domingo && (
         <View className="mb-3 rounded-lg border border-amber-500 bg-amber-500/20 p-2">
           <Text className="text-amber-300">Domingo indisponível para reservas.</Text>
@@ -92,6 +118,7 @@ export default function ReservasCalendarScreen() {
 
       <Legend />
 
+      {/* Lista de slots (responsiva por padrão) */}
       <View className="flex-1">
         <SlotList
           slots={slots}
@@ -102,9 +129,11 @@ export default function ReservasCalendarScreen() {
           loadingAny={loadingAny}
           isFetching={isFetching}
           onPick={openReserveModal}
+          onOpenDetails={openDetalhesByHorarioId}
         />
       </View>
 
+      {/* Modal de criar/confirmar reserva */}
       <ReservaModal
         visible={showModal}
         date={selectedDate}
@@ -118,18 +147,17 @@ export default function ReservasCalendarScreen() {
         saving={saving}
       />
 
-      {/* MODAL DO CALENDÁRIO */}
+      {/* Modal do calendário — INDEPENDENTE do de detalhes */}
       <Modal
         visible={showCalendar}
         transparent
         animationType="fade"
         onRequestClose={() => setShowCalendar(false)}>
         <View className="flex-1 items-center justify-center bg-black/60">
-          <View className="w-11/12 rounded-2xl bg-zinc-900 p-4">
+          <View className="w-11/12 max-w-xl rounded-2xl bg-zinc-900 p-4">
             <Text className="mb-2 text-lg font-semibold text-white">Escolha a data</Text>
 
             <Calendar
-              // mostra a mesma data selecionada
               initialDate={dayjs(selectedDate).format('YYYY-MM-DD')}
               markedDates={marked}
               theme={{
@@ -146,16 +174,6 @@ export default function ReservasCalendarScreen() {
                 goToDate(d);
                 setShowCalendar(false);
               }}
-              // opcional: desabilitar domingos (se quiser impedir seleção)
-              // dayComponent={({ date, state, marking }) => {
-              //   const isSunday = dayjs(date.dateString).day() === 0;
-              //   const disabled = isSunday;
-              //   return (
-              //     <Text style={{ color: disabled ? '#555' : state === 'disabled' ? '#555' : '#fff' }}>
-              //       {date.day}
-              //     </Text>
-              //   );
-              // }}
             />
 
             <View className="mt-3 flex-row justify-end">
@@ -168,6 +186,13 @@ export default function ReservasCalendarScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Modal de detalhes — FORA do modal do calendário */}
+      <ReservaDetalhesModal
+        visible={detalheOpen}
+        reserva={reservaSelecionada}
+        onClose={() => setDetalheOpen(false)}
+      />
     </View>
   );
 }
