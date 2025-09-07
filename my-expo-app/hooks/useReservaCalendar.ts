@@ -1,5 +1,9 @@
+// hooks/useReservaCalendar.ts
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
+dayjs.extend(customParseFormat);
+
 import { useCampo, useCampos } from './useCampos';
 import { useHorarios } from './useHorarios';
 import { useReservas } from './useReservas';
@@ -28,33 +32,44 @@ export function useReservaCalendar() {
     per_page: 200,
     page: 1,
   });
-  const reservaByHorarioId = useMemo(() => {
-    const map = new Map<number, any>();
-    reservasDia?.data?.forEach((r: any) => {
-      if (r?.horario_id && r?.status !== 'cancelado') {
-        map.set(r.horario_id, r);
-      }
-    });
-    return map;
-  }, [reservasDia]);
+
   useEffect(() => {
     if (!campoId && camposData?.data?.length) setCampoId(camposData.data[0].id);
   }, [campoId, camposData]);
 
-  const baseSlots = useMemo(() => buildSlots(), []);
-  const horarioMap = useMemo(() => {
-    const map = new Map<string, number>();
-    const toHM = (s: string) => (s?.length >= 5 ? s.slice(0, 5) : s);
-    horariosData?.data?.forEach((h: any) => {
-      map.set(`${toHM(h.hora_inicio)}-${toHM(h.hora_fim)}`, h.id);
-    });
-    return map;
+  // ---------- slots ----------
+  const normalize = (s?: string) =>
+    s ? dayjs(s, ['HH:mm:ss', 'H:mm:ss', 'HH:mm', 'H:mm'], true).format('HH:mm') : '';
+
+  const slots: Slot[] = useMemo(() => {
+    const list = horariosData?.data;
+    if (list?.length) {
+      // monta a grade vinda do backend
+      return list
+        .map((h: any) => {
+          const inicio = normalize(h.hora_inicio);
+          const fim = normalize(h.hora_fim);
+          return {
+            label: `${inicio} - ${fim}`,
+            inicio,
+            fim,
+            horario_id: h.id,
+          } as Slot;
+        })
+        .sort((a, b) => a.inicio.localeCompare(b.inicio));
+    }
+    // fallback fixo (inclui 07–09)
+    return buildSlots(7, 23, 2);
   }, [horariosData]);
 
-  const slots: Slot[] = useMemo(
-    () => baseSlots.map((s) => ({ ...s, horario_id: horarioMap.get(`${s.inicio}-${s.fim}`) })),
-    [baseSlots, horarioMap]
-  );
+  // reservas do dia indexadas por horario_id (para "Ver detalhes")
+  const reservaByHorarioId = useMemo(() => {
+    const map = new Map<number, any>();
+    reservasDia?.data?.forEach((r: any) => {
+      if (r?.horario_id && r?.status !== 'cancelado') map.set(r.horario_id, r);
+    });
+    return map;
+  }, [reservasDia]);
 
   const busyByHorarioId = useMemo(() => {
     const set = new Set<number>();
@@ -69,7 +84,7 @@ export function useReservaCalendar() {
   const isPastSlot = useCallback(
     (slot: Slot) => {
       if (!isToday) return false;
-      const now = dayjs(); // calcula no momento da checagem
+      const now = dayjs();
       const end = dayjs(`${fmt(selectedDate)} ${slot.fim}:00`);
       return now.isAfter(end);
     },
@@ -78,7 +93,7 @@ export function useReservaCalendar() {
 
   const domingo = isSunday(selectedDate);
   const loadingAny = loadingHorarios || loadingReservas;
-  const semHorarios = !loadingHorarios && !horariosData?.data?.length;
+  const semHorarios = !loadingHorarios && !(horariosData?.data?.length ?? 0);
 
   const goPrevDay = useCallback(() => {
     let prev = dayjs(selectedDate).subtract(1, 'day');
@@ -92,13 +107,9 @@ export function useReservaCalendar() {
     setSelectedDate(next.toDate());
   }, [selectedDate]);
 
-  // 👉 NOVO: ir direto para uma data específica (evitando domingo por padrão)
   const goToDate = useCallback((date: Date, opts?: { allowSunday?: boolean }) => {
     let d = dayjs(date);
-    if (!opts?.allowSunday && isSunday(d)) {
-      // regra: se caiu num domingo, avança para segunda
-      d = d.add(1, 'day');
-    }
+    if (!opts?.allowSunday && isSunday(d)) d = d.add(1, 'day');
     setSelectedDate(d.toDate());
   }, []);
 
@@ -112,6 +123,7 @@ export function useReservaCalendar() {
     domingo,
     slots,
     busyByHorarioId,
+    reservaByHorarioId,
     isPastSlot,
     loadingAny,
     semHorarios,
@@ -119,6 +131,5 @@ export function useReservaCalendar() {
     goPrevDay,
     goNextDay,
     goToDate,
-    reservaByHorarioId, // <-- exporta para a tela abrir o calendário e saltar de uma vez
   };
 }
