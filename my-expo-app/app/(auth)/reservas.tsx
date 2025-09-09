@@ -44,6 +44,8 @@ export default function ReservasCalendarScreen() {
     openReserveModal,
     closeModal,
     confirmReserva,
+    clienteCpfCnpj,
+    setClienteCpfCnpj,
     clienteNome,
     setClienteNome,
     clienteTelefone,
@@ -142,6 +144,8 @@ export default function ReservasCalendarScreen() {
         setClienteNome={setClienteNome}
         clienteTelefone={clienteTelefone}
         setClienteTelefone={setClienteTelefone}
+        clienteCpfCnpj={clienteCpfCnpj}
+        setClienteCpfCnpj={setClienteCpfCnpj}
         onCancel={closeModal}
         onConfirm={confirmReserva}
         saving={saving}
