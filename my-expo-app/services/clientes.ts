@@ -59,3 +59,7 @@ export async function deleteCliente(id: number) {
   await api.delete(`/clientes/${id}`);
   return id;
 }
+export async function findClienteByDoc(cpf_cnpj: string) {
+  const res = await api.get('/clientes/by-doc', { params: { cpf_cnpj } });
+  return res.data?.cliente ?? null;
+}

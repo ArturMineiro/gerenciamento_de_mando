@@ -1,10 +1,11 @@
 // hooks/reservas/useQuickReserva.ts
 import { useState, useCallback } from 'react';
-import { useCreateCliente } from '../useClientes';
+import { useRouter } from 'expo-router';
 import { useCreateReserva } from '../useReservas';
 import { Slot } from '../../utils/datetime';
 import { onlyDigits } from '../../utils/cpfCnpj';
 import { clienteSchema } from 'schemas/clienteSchema';
+import { findClienteByDoc } from '../../services/clientes';
 
 type Params = {
   campoId?: number;
@@ -14,15 +15,15 @@ type Params = {
   domingo: boolean;
 };
 
-const SEND_MASKED_TO_BACKEND = false; // mude para true se quiser ENVIAR com máscara
-
 export function useQuickReserva({ campoId, dateStr, isPastSlot, domingo }: Params) {
+  const router = useRouter();
+
   const [showModal, setShowModal] = useState(false);
   const [pendingSlot, setPendingSlot] = useState<Slot | null>(null);
   const [clienteNome, setClienteNome] = useState('');
   const [clienteTelefone, setClienteTelefone] = useState('');
   const [clienteCpfCnpj, setClienteCpfCnpj] = useState('');
-  const createCliente = useCreateCliente({ onError: (m) => alert(m) });
+
   const createReserva = useCreateReserva({ onError: (m) => alert(m) });
 
   const openReserveModal = useCallback((slot: Slot) => {
@@ -41,73 +42,67 @@ export function useQuickReserva({ campoId, dateStr, isPastSlot, domingo }: Param
     setClienteCpfCnpj('');
   }, []);
 
-  const confirmReserva = useCallback(() => {
+  const confirmReserva = useCallback(async () => {
     if (!campoId) return alert('Selecione um campo.');
     if (domingo) return alert('Domingo indisponível.');
     if (!pendingSlot?.horario_id) return alert('Não há horário cadastrado para esse intervalo.');
     if (isPastSlot(pendingSlot)) return alert('Horário já passou.');
 
-    const parsed = clienteSchema.safeParse({
-      nome: clienteNome.trim(),
-      telefone: clienteTelefone.trim(),
-      cpf_cnpj: clienteCpfCnpj.trim(), // pode vir mascarado; schema aceita
+    // Aqui validamos só o que a reserva precisa: CPF/CNPJ (obrigatório), nome/telefone podem ser ignorados
+    const parsed = clienteSchema.pick({ cpf_cnpj: true }).safeParse({
+      cpf_cnpj: clienteCpfCnpj.trim(),
     });
-
     if (!parsed.success) {
-      const msg = parsed.error.issues?.[0]?.message || 'Dados inválidos.';
-      alert(msg);
+      alert(parsed.error.issues?.[0]?.message || 'CPF/CNPJ inválido.');
       return;
     }
 
-    const { nome, telefone, cpf_cnpj } = parsed.data;
+    const cpfDigits = onlyDigits(parsed.data.cpf_cnpj);
 
-    // Escolha de envio: mascarado ou apenas dígitos
-    const cpfCnpjToSend = SEND_MASKED_TO_BACKEND ? cpf_cnpj : onlyDigits(cpf_cnpj);
+    // 1) Busca cliente existente
+    let clienteId: number | null = null;
+    try {
+      const found = await findClienteByDoc(cpfDigits);
+      if (found?.id) clienteId = found.id;
+    } catch {
+      // deixe passar; trataremos como "não encontrado"
+    }
 
-    const telefoneToSend = telefone
-      ? SEND_MASKED_TO_BACKEND
-        ? telefone
-        : onlyDigits(telefone)
-      : null;
+    // 2) Se não existir, redireciona para cadastro de cliente (fluxo separado)
+    if (!clienteId) {
+      alert('Cliente não encontrado. Você será levado ao cadastro para criar o cliente primeiro.');
+      // navegue para sua tela de cadastro; passe o CPF pré-preenchido
+      router.push({
+        pathname: '/clientes/novo',
+        params: { cpf_cnpj: cpfDigits },
+      });
+      return;
+    }
 
-    createCliente.mutate(
+    // 3) Cria a reserva com o cliente encontrado
+    createReserva.mutate(
       {
-        cpf_cnpj: cpfCnpjToSend,
-        nome,
-        telefone: telefoneToSend,
-        email: null,
+        campo_id: campoId,
+        cliente_id: clienteId,
+        horario_id: pendingSlot.horario_id!,
+        data: dateStr,
+        status: 'reservado',
       },
-      {
-        onSuccess: (res: any) => {
-          const cliente = res?.cliente ?? res;
-          createReserva.mutate(
-            {
-              campo_id: campoId,
-              cliente_id: cliente.id,
-              horario_id: pendingSlot.horario_id!,
-              data: dateStr,
-              status: 'reservado',
-            },
-            { onSuccess: closeModal }
-          );
-        },
-      }
+      { onSuccess: closeModal }
     );
   }, [
     campoId,
     domingo,
     pendingSlot,
-    clienteNome,
-    clienteTelefone,
     clienteCpfCnpj,
     dateStr,
     isPastSlot,
-    createCliente,
     createReserva,
     closeModal,
+    router,
   ]);
 
-  const saving = createCliente.isPending || createReserva.isPending;
+  const saving = createReserva.isPending;
 
   return {
     showModal,
