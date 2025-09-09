@@ -17,5 +17,10 @@ class Cliente extends Model
     {
         return $this->hasMany(Reserva::class);
     }
+
+        public function setCpfCnpjAttribute($value)
+    {
+        $this->attributes['cpf_cnpj'] = preg_replace('/\D+/', '', (string) $value);
+    }
 }
 

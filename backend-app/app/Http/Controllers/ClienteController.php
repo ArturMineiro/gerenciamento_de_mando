@@ -107,4 +107,27 @@ class ClienteController extends Controller
 
         return response()->json(['message' => 'Cliente excluído com sucesso.']);
     }
+
+    public function findByCpfCnpj(Request $request)
+{
+    $userId = $request->user()->id;
+    $doc = preg_replace('/\D+/', '', (string) $request->query('cpf_cnpj', ''));
+
+    if ($doc === '') {
+        return response()->json(['message' => 'cpf_cnpj é obrigatório'], 422);
+    }
+
+    // Se você armazenar cpf_cnpj "limpo" (só dígitos) no banco, a busca fica simples:
+    $cliente = Cliente::where('usuario_id', $userId)
+        ->where('cpf_cnpj', $doc)
+        ->first();
+
+    // Se ainda tiver registros antigos mascarados, pode usar whereRaw para normalizar na query:
+    // $cliente = Cliente::where('usuario_id', $userId)
+    //   ->whereRaw("REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(cpf_cnpj, '\\\\.', ''), '-', ''), '/', ''), '\\\\(', ''), '\\\\)', '') = ?", [$doc])
+    //   ->first();
+
+    return response()->json(['cliente' => $cliente]);
+}
+
 }

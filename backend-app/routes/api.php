@@ -9,11 +9,13 @@ use App\Http\Controllers\ReservaController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
-
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
+
+    Route::get('/clientes/by-doc', [ClienteController::class, 'findByCpfCnpj']);
+
     Route::apiResource('campos', CampoController::class);
     Route::apiResource('horarios', HorarioController::class);
     Route::apiResource('reservas', ReservaController::class);
-    Route::apiResource('clientes', ClienteController::class);
+    Route::apiResource('clientes', ClienteController::class)->whereNumber('cliente');
 });
