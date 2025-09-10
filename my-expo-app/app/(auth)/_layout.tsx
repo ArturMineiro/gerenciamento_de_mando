@@ -28,5 +28,9 @@ export default function AuthGroupLayout() {
     return <Redirect href="/(auth)/home" />;
   }
 
+  if (token && onAuthRoute) {
+    return <Redirect href="/(auth)/cadastro-cliente" />;
+  }
+
   return <Stack />;
 }

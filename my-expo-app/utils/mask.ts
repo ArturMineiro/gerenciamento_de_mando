@@ -1,10 +1,8 @@
 // utils/mask.ts
-export function onlyDigits(v: string) {
-  return (v || '').replace(/\D+/g, '');
-}
+export const digitsOnly = (v: string) => (v || '').replace(/\D+/g, '');
 
 export function maskCpfCnpj(v: string) {
-  const d = onlyDigits(v).slice(0, 14); // até 14 dígitos
+  const d = digitsOnly(v).slice(0, 14); // até 14 dígitos
   if (d.length <= 11) {
     // CPF: 000.000.000-00
     return d
@@ -22,7 +20,7 @@ export function maskCpfCnpj(v: string) {
 
 // Brasil: (21) 90000-0000 ou (21) 2345-6789
 export function maskPhone(v: string) {
-  const d = onlyDigits(v).slice(0, 11); // até 11 dígitos
+  const d = digitsOnly(v).slice(0, 11); // até 11 dígitos
   if (d.length <= 10) {
     // (XX) XXXX-XXXX
     return d

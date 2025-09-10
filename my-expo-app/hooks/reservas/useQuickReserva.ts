@@ -73,9 +73,12 @@ export function useQuickReserva({ campoId, dateStr, isPastSlot, domingo }: Param
       alert('Cliente não encontrado. Você será levado ao cadastro para criar o cliente primeiro.');
       // navegue para sua tela de cadastro; passe o CPF pré-preenchido
       router.push({
-        pathname: '/clientes/novo',
-        params: { cpf_cnpj: cpfDigits },
+        pathname: '/cadastro-cliente',
       });
+
+      {
+        closeModal();
+      }
       return;
     }
 

@@ -3,6 +3,12 @@ import { api } from 'api/api';
 
 export type ReservaStatus = 'reservado' | 'cancelado' | 'concluido';
 
+export type Horario = {
+  id: number;
+  hora_inicio: string; // "HH:mm"
+  hora_fim: string; // "HH:mm"
+};
+
 export type Reserva = {
   id: number;
   usuario_id: number;
@@ -14,7 +20,7 @@ export type Reserva = {
   created_at?: string;
   updated_at?: string;
 
-  // se o backend carrega relações (with):
+  // Relações (se o backend retornar com with())
   cliente?: {
     id: number;
     nome: string;
@@ -27,11 +33,7 @@ export type Reserva = {
     nome: string;
     localizacao?: string | null;
   };
-  horario?: {
-    id: number;
-    hora_inicio: string; // "HH:mm"
-    hora_fim: string; // "HH:mm"
-  };
+  horario?: Horario;
 };
 
 export type ReservaInput = {

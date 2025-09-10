@@ -1,8 +1,8 @@
 // components/reservas/ReservaDetalhesModal.tsx
 import { Modal, View, Text, Pressable } from 'react-native';
 import dayjs from 'dayjs';
-
-type Reserva = any; // tipar conforme seu backend se quiser
+import { maskCpfCnpj, maskPhone } from '../../utils/mask'; // <- conferir nome do arquivo
+import type { Reserva } from '../../services/reservas';
 
 type Props = {
   visible: boolean;
@@ -10,14 +10,28 @@ type Props = {
   onClose(): void;
 };
 
+function formatHorario(h?: Reserva['horario']): string {
+  if (!h) return '—';
+  const ini = h.hora_inicio ?? '';
+  const fim = h.hora_fim ?? '';
+  if (ini && fim) return `${ini} - ${fim}`;
+  if (ini) return ini;
+  if (fim) return fim;
+  return '—';
+}
+
 export default function ReservaDetalhesModal({ visible, reserva, onClose }: Props) {
-  const dataStr = reserva?.data ? dayjs(reserva.data).format('DD/MM/YYYY') : '';
-  const campoNome = reserva?.campo?.nome ?? reserva?.campo_nome ?? '—';
-  const clienteNome = reserva?.cliente?.nome ?? reserva?.cliente_nome ?? '—';
-  const clienteTelefone = reserva?.cliente?.telefone ?? reserva?.cliente_telefone ?? '—';
-  const horario = reserva?.horario
-    ? `${String(reserva.horario?.hora_inicio).slice(0, 5)} - ${String(reserva.horario?.hora_fim).slice(0, 5)}`
-    : (reserva?.hora_label ?? '—');
+  const dataStr = reserva?.data ? dayjs(reserva.data).format('DD/MM/YYYY') : '—';
+  const campoNome = reserva?.campo?.nome ?? '—';
+  const clienteNome = reserva?.cliente?.nome ?? '—';
+
+  const telRaw = reserva?.cliente?.telefone ?? '';
+  const clienteTelefone = telRaw ? (maskPhone?.(String(telRaw)) ?? String(telRaw)) : '—';
+
+  const cpfRaw = reserva?.cliente?.cpf_cnpj ?? '';
+  const cpf_cnpj = cpfRaw ? (maskCpfCnpj?.(String(cpfRaw)) ?? String(cpfRaw)) : '—';
+
+  const horarioStr = formatHorario(reserva?.horario);
 
   return (
     <Modal visible={visible} animationType="fade" transparent onRequestClose={onClose}>
@@ -29,13 +43,16 @@ export default function ReservaDetalhesModal({ visible, reserva, onClose }: Prop
             Data: <Text className="text-white">{dataStr}</Text>
           </Text>
           <Text className="mb-1 text-zinc-300">
-            Horário: <Text className="text-white">{horario}</Text>
+            Horário: <Text className="text-white">{horarioStr}</Text>
           </Text>
           <Text className="mb-1 text-zinc-300">
             Campo: <Text className="text-white">{campoNome}</Text>
           </Text>
           <Text className="mb-1 text-zinc-300">
             Cliente: <Text className="text-white">{clienteNome}</Text>
+          </Text>
+          <Text className="mb-1 text-zinc-300">
+            CPF/CNPJ: <Text className="text-white">{cpf_cnpj}</Text>
           </Text>
           <Text className="mb-4 text-zinc-300">
             Telefone: <Text className="text-white">{clienteTelefone}</Text>
