@@ -4,15 +4,15 @@ import { ActivityIndicator, FlatList, RefreshControl, Text, View } from 'react-n
 import { Stack } from 'expo-router';
 import type { Campo } from 'services/campos-service';
 
-import { useCampoList } from '../../hooks/campos/useCampoList';
-import { useCampoForm } from '../../hooks/campos/useCampoForm';
-import { useCampoDelete } from '../../hooks/campos/useCampoDelete';
+import { useCampoList } from '.../../hooks/campos/useCampoList';
+import { useCampoForm } from '.../../hooks/campos/useCampoForm';
+import { useCampoDelete } from '.../../hooks/campos/useCampoDelete';
 
-import SearchBar from '../../components/campos/SearchBar';
-import CampoItem from '../../components/campos/CampoItem';
-import PaginationBar from '../../components/campos/PaginationBar';
-import CampoFormModal from '../../components/campos/CampoFormModal';
-import ConfirmModal from '../../components/campos/ConfirmModal';
+import SearchBar from '.../../components/campos/SearchBar';
+import CampoItem from 'app/(auth)/campos/CampoItem';
+import PaginationBar from '.../../components/campos/PaginationBar';
+import CampoFormModal from './CampoFormModal';
+import ConfirmModal from '.../../components/campos/ConfirmModal';
 
 export default function CamposManagerScreen() {
   // Header desta rota (Expo Router)
