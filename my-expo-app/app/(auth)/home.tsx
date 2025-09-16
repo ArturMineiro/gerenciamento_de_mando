@@ -51,6 +51,12 @@ export default function HomeScreen() {
             className="rounded-2xl bg-white/90 py-3 text-center active:opacity-90">
             <Text className="font-bold text-emerald-700">Gerenciar Campos</Text>
           </Link>
+
+          <Link
+            href="/(auth)/horarios" // ✅ grupo correto
+            className="rounded-2xl bg-white/90 py-3 text-center active:opacity-90">
+            <Text className="font-bold text-emerald-700">Gerenciar Horarios</Text>
+          </Link>
         </View>
       </View>
     </SafeAreaView>

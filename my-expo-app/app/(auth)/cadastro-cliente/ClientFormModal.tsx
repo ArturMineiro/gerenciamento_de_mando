@@ -9,9 +9,9 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { useCreateCliente, useUpdateCliente } from '../../hooks/useClientes';
-import { digitsOnly, maskCpfCnpj, maskPhone } from '../../utils/mask';
-import type { Cliente } from '../../services/clientes';
+import { useCreateCliente, useUpdateCliente } from '../../../hooks/useClientes';
+import { digitsOnly, maskCpfCnpj, maskPhone } from '../../../utils/mask';
+import type { Cliente } from '../../../services/clientes';
 
 const Label: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <Text style={{ color: '#e4e4e7', marginBottom: 6, fontWeight: '600' }}>{children}</Text>
