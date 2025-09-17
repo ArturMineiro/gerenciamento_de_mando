@@ -6,6 +6,7 @@ import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import { useLogin, extractMessage } from '../../hooks/useAuth';
 
+
 export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -62,6 +63,11 @@ export default function LoginScreen() {
                 Registre-se
               </Link>
             </Text>
+             <div style={{ marginTop: 8 }}>
+         <Text className="mt-3 text-center">
+        <Link href="/forgot-password" className="text-emerald-400">Esqueceu a senha?</Link>
+      </Text>
+      </div>
           </View>
         </View>
       </KeyboardAvoidingView>

@@ -1,8 +1,49 @@
-// hooks/useAuth.ts (o arquivo onde estão useLogin/useLogout/useMe)
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { loginApi, registerApi, logoutApi, meApi, LoginInput, RegisterInput } from 'services/auth';
-import { useAuth } from '../providers/AuthProvider'; // ✅
+// hooks/useAuth.ts
+import {
+  useMutation,
+  UseMutationOptions,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
+import {
+  loginApi,
+  registerApi,
+  logoutApi,
+  meApi,
+  type LoginInput,
+  type RegisterInput,
+  forgotPasswordApi,
+  resetPasswordApi,
+} from 'services/auth';
+import { useAuth } from '../providers/AuthProvider';
 
+/** ------------------ Tipos de respostas/variáveis ------------------ */
+type MsgResp = { message: string };
+
+type ForgotVars = { email: string };
+
+type ResetVars = {
+  email: string;
+  token: string;
+  password: string;
+  password_confirmation: string;
+};
+
+type LoginResp = {
+  message?: string;
+  usuario?: any;
+  token?: string;
+  access_token?: string;
+  data?: { token?: string };
+};
+
+type RegisterResp = {
+  message: string;
+  usuario: any;
+  token?: string;
+};
+
+/** ------------------ Utils ------------------ */
 export function extractMessage(err: unknown): string {
   const anyErr = err as any;
   const msg =
@@ -13,50 +54,92 @@ export function extractMessage(err: unknown): string {
   return String(msg);
 }
 
-export function useLogin(opts?: { onSuccess?: () => void }) {
+/** ------------------ FORGOT PASSWORD ------------------ */
+export function useForgotPassword(
+  opts?: UseMutationOptions<MsgResp, unknown, ForgotVars>
+) {
+  return useMutation<MsgResp, unknown, ForgotVars>({
+    mutationFn: (p) => forgotPasswordApi(p),
+    ...opts,
+  });
+}
+
+/** ------------------ RESET PASSWORD ------------------ */
+export function useResetPassword(
+  opts?: UseMutationOptions<MsgResp, unknown, ResetVars>
+) {
+  return useMutation<MsgResp, unknown, ResetVars>({
+    mutationFn: (p) => resetPasswordApi(p),
+    ...opts,
+  });
+}
+
+/** ------------------ LOGIN ------------------ */
+export function useLogin(
+  opts?: UseMutationOptions<LoginResp, unknown, LoginInput>
+) {
   const qc = useQueryClient();
-  const { signIn } = useAuth(); // ✅
-  return useMutation({
-    mutationFn: (data: LoginInput) => loginApi(data),
-    onSuccess: async (res: any) => {
-      // pegue o nome correto do campo de token retornado pela sua API
+  const { signIn } = useAuth();
+
+  return useMutation<LoginResp, unknown, LoginInput>({
+    mutationFn: (data) => loginApi(data),
+    onSuccess: async (res, variables, ctx) => {
       const token = res?.token ?? res?.access_token ?? res?.data?.token;
-      if (token) await signIn(token); // ✅ salva no AuthProvider/AsyncStorage
+      if (token) await signIn(token); // salva no AuthProvider/AsyncStorage e seta Authorization
       await qc.invalidateQueries({ queryKey: ['me'] });
-      opts?.onSuccess?.();
+
+      // encadear onSuccess externo (se passado)
+      if (opts?.onSuccess) {
+        await (opts.onSuccess as any)(res, variables, ctx);
+      }
     },
-    throwOnError: false,
     retry: false,
+    // mantém outras opções passadas
+    ...opts,
   });
 }
 
-export function useRegister(opts?: { onSuccess?: () => void }) {
+/** ------------------ REGISTER ------------------ */
+export function useRegister(
+  opts?: UseMutationOptions<RegisterResp, unknown, RegisterInput>
+) {
   const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (data: RegisterInput) => registerApi(data),
-    onSuccess: async () => {
+
+  return useMutation<RegisterResp, unknown, RegisterInput>({
+    mutationFn: (data) => registerApi(data),
+    onSuccess: async (res, variables, ctx) => {
       await qc.invalidateQueries({ queryKey: ['me'] });
-      opts?.onSuccess?.();
+
+      if (opts?.onSuccess) {
+        await (opts.onSuccess as any)(res, variables, ctx);
+      }
     },
-    throwOnError: false,
     retry: false,
+    ...opts,
   });
 }
 
-export function useLogout(opts?: { onSuccess?: () => void }) {
+/** ------------------ LOGOUT ------------------ */
+export function useLogout(
+  opts?: UseMutationOptions<boolean, unknown, void>
+) {
   const qc = useQueryClient();
-  const { signOut } = useAuth(); // ✅
-  return useMutation({
+  const { signOut } = useAuth();
+
+  return useMutation<boolean, unknown, void>({
     mutationFn: () => logoutApi(),
-    // Se sua API não tiver endpoint de logout, pode usar mutationFn: async () => {}
-    onSettled: async () => {
-      await signOut(); // ✅ limpa token
-      await qc.clear(); // limpa cache (opcional)
-      opts?.onSuccess?.();
+    onSettled: async (data, error, variables, ctx) => {
+      await signOut();   // limpa token + Authorization
+      await qc.clear();  // limpa cache
+      if (opts?.onSettled) {
+        await (opts.onSettled as any)(data, error, variables, ctx);
+      }
     },
+    ...opts,
   });
 }
 
+/** ------------------ ME ------------------ */
 export function useMe() {
   return useQuery({
     queryKey: ['me'],

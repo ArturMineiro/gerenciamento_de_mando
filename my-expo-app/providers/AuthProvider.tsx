@@ -1,14 +1,18 @@
+// auth/AuthProvider.tsx
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { api } from 'api/api';
 
 type AuthContextType = {
   token: string | null;
-  isBooting: boolean; // carregando token do storage
+  isBooting: boolean;
   signIn: (token: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
+
+// 🔑 garanta usar a MESMA chave em todo lugar
 const TOKEN_KEY = '@auth_token';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -26,6 +30,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })();
   }, []);
 
+  // 👉 sempre que o token mudar, atualiza o Authorization do Axios
+  useEffect(() => {
+    if (token) {
+      api.defaults.headers.common.Authorization = `Bearer ${token}`;
+    } else {
+      delete api.defaults.headers.common.Authorization;
+    }
+  }, [token]);
+
   const signIn = async (newToken: string) => {
     await AsyncStorage.setItem(TOKEN_KEY, newToken);
     setToken(newToken);
@@ -37,7 +50,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const value = useMemo(() => ({ token, isBooting, signIn, signOut }), [token, isBooting]);
-
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
